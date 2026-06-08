@@ -1,0 +1,1460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Meeting Minutes Recorder</title>
+<style>
+  :root {
+    --navy-deep: #0b1c3d;
+    --navy: #1e3a8a;
+    --navy-mid: #1e40af;
+    --navy-light: #2c4eaa;
+    --gold: #d4a017;
+    --gold-bright: #f59e0b;
+    --gold-soft: #fbbf24;
+    --cream: #fef3c7;
+    --ink: #e7eaf3;
+    --ink-dim: #a3b1cc;
+    --line: rgba(212, 160, 23, 0.18);
+    --panel: #142753;
+    --panel-2: #1a3068;
+    --danger: #f87171;
+    --ok: #34d399;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    background: linear-gradient(135deg, var(--navy-deep) 0%, var(--navy) 100%);
+    color: var(--ink);
+    min-height: 100vh;
+    padding: 24px 16px 80px;
+    line-height: 1.55;
+  }
+  .container { max-width: 1100px; margin: 0 auto; }
+
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 22px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  h1 {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--gold-bright);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    letter-spacing: 0.01em;
+  }
+  h1 .icon { font-size: 26px; }
+  .subtitle { font-size: 12px; color: var(--ink-dim); margin-top: 2px; }
+
+  .header-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 16px;
+  }
+  @media (max-width: 880px) { .grid { grid-template-columns: 1fr; } }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 16px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.18);
+  }
+  .panel h2 {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--gold);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  /* Buttons */
+  button {
+    background: var(--navy-light);
+    color: var(--ink);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px;
+    padding: 7px 12px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: inherit;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.15s;
+  }
+  button:hover:not(:disabled) { background: #2d52b8; border-color: var(--gold); color: white; }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+  button.gold {
+    background: linear-gradient(135deg, var(--gold) 0%, var(--gold-bright) 100%);
+    color: var(--navy-deep);
+    font-weight: 600;
+    border-color: var(--gold);
+  }
+  button.gold:hover:not(:disabled) {
+    background: linear-gradient(135deg, var(--gold-bright) 0%, var(--gold-soft) 100%);
+    color: var(--navy-deep);
+  }
+  button.danger { background: rgba(248, 113, 113, 0.15); color: var(--danger); border-color: rgba(248,113,113,0.3); }
+  button.danger:hover:not(:disabled) { background: rgba(248,113,113,0.25); color: white; }
+  button.ghost { background: transparent; border-color: var(--line); }
+  button.ghost:hover:not(:disabled) { background: rgba(212,160,23,0.08); }
+  button.tiny { padding: 3px 7px; font-size: 10px; }
+
+  /* Inputs */
+  label { display: block; font-size: 11px; font-weight: 500; color: var(--ink-dim); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+  input[type=text], select, textarea {
+    width: 100%;
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 13px;
+    font-family: inherit;
+    color: var(--ink);
+  }
+  input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--gold);
+    box-shadow: 0 0 0 1px var(--gold);
+  }
+  .field { margin-bottom: 10px; }
+
+  /* Record button */
+  .record-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 18px 0 12px;
+  }
+  .record-btn {
+    width: 96px;
+    height: 96px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--gold) 0%, var(--gold-bright) 100%);
+    color: var(--navy-deep);
+    font-size: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border: 4px solid rgba(212,160,23,0.3);
+    margin: 0 auto;
+    transition: all 0.2s;
+    box-shadow: 0 4px 24px rgba(212, 160, 23, 0.3);
+  }
+  .record-btn:hover:not(:disabled) { transform: scale(1.05); box-shadow: 0 6px 32px rgba(212, 160, 23, 0.5); }
+  .record-btn.recording {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: white;
+    border-color: rgba(239,68,68,0.4);
+    animation: pulse 1.6s infinite;
+    box-shadow: 0 4px 24px rgba(239, 68, 68, 0.5);
+  }
+  .record-btn:disabled { background: #475569; color: #94a3b8; box-shadow: none; cursor: not-allowed; }
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+    50% { box-shadow: 0 0 0 16px rgba(239, 68, 68, 0); }
+  }
+  .timer {
+    font-family: ui-monospace, monospace;
+    font-size: 24px;
+    color: var(--gold-bright);
+    margin-top: 14px;
+    font-weight: 300;
+    letter-spacing: 0.05em;
+  }
+  .vu-meter {
+    width: 100%;
+    height: 6px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-top: 12px;
+  }
+  .vu-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--gold) 0%, var(--gold-bright) 100%);
+    width: 0%;
+    transition: width 0.06s ease-out;
+  }
+  .lang-row { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px; }
+  .lang-row button {
+    padding: 4px 8px;
+    font-size: 10px;
+    background: rgba(255,255,255,0.04);
+    color: var(--ink-dim);
+  }
+  .lang-row button.active { background: var(--gold); color: var(--navy-deep); border-color: var(--gold); }
+
+  /* Speakers */
+  .speaker-list { display: flex; flex-direction: column; gap: 6px; }
+  .speaker-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    background: var(--panel-2);
+    border-left: 3px solid;
+    border-radius: 6px;
+    font-size: 13px;
+  }
+  .speaker-name { flex: 1; font-weight: 500; }
+  .speaker-stats { font-size: 10px; color: var(--ink-dim); font-family: ui-monospace, monospace; }
+  .speaker-row .icon-btn {
+    background: transparent;
+    border: none;
+    color: var(--ink-dim);
+    padding: 2px 4px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .speaker-row .icon-btn:hover { color: var(--gold); }
+
+  /* Transcript */
+  .transcript-area {
+    background: #fefdf8;
+    color: #1a1a1a;
+    border-radius: 10px;
+    padding: 28px 32px;
+    min-height: 360px;
+    max-height: 520px;
+    overflow-y: auto;
+    font-family: "Calibri", "Segoe UI", sans-serif;
+    font-size: 14px;
+    line-height: 1.7;
+    box-shadow: inset 0 2px 8px rgba(0,0,0,0.1);
+    position: relative;
+  }
+  .transcript-doc-header {
+    text-align: center;
+    border-bottom: 2px solid var(--navy);
+    padding-bottom: 14px;
+    margin-bottom: 18px;
+  }
+  .transcript-doc-header h3 {
+    font-size: 18px;
+    color: var(--navy);
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .transcript-doc-header .meta { font-size: 11px; color: #6b7280; font-style: italic; }
+  .utterance {
+    margin-bottom: 12px;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  .utterance .timestamp {
+    font-size: 10px;
+    color: #94a3b8;
+    font-family: ui-monospace, monospace;
+    min-width: 50px;
+    padding-top: 4px;
+    flex-shrink: 0;
+  }
+  .utterance-content { flex: 1; }
+  .utterance .speaker-tag {
+    font-weight: 700;
+    color: var(--navy);
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 4px;
+    transition: background 0.15s;
+    display: inline-block;
+    margin-right: 4px;
+  }
+  .utterance .speaker-tag:hover { background: rgba(212,160,23,0.18); }
+  .utterance .speaker-tag.unknown { color: #94a3b8; font-style: italic; }
+  .utterance .text { display: inline; }
+  .utterance .interim { color: #94a3b8; font-style: italic; }
+  .utterance .confidence-low { border-left: 3px solid #f59e0b; padding-left: 10px; }
+
+  .transcript-empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: #94a3b8;
+    font-style: italic;
+  }
+
+  /* Cursor mode panel */
+  .cursor-mode {
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 10px;
+    margin-top: 10px;
+    font-size: 12px;
+  }
+  .cursor-mode .last-line {
+    background: rgba(0,0,0,0.2);
+    padding: 8px 10px;
+    border-radius: 6px;
+    margin-top: 6px;
+    font-family: "Calibri", system-ui, sans-serif;
+    color: var(--ink);
+    min-height: 32px;
+    word-wrap: break-word;
+  }
+  .clipboard-hint {
+    color: var(--gold);
+    font-size: 11px;
+    margin-top: 6px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  /* Modal */
+  .modal-bg {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 16px;
+  }
+  .modal {
+    background: var(--panel);
+    border: 1px solid var(--gold);
+    border-radius: 14px;
+    padding: 24px;
+    max-width: 480px;
+    width: 100%;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.5);
+  }
+  .modal h3 {
+    color: var(--gold-bright);
+    font-size: 16px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .modal p { font-size: 13px; color: var(--ink-dim); margin-bottom: 14px; }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 14px; }
+
+  /* Calibration */
+  .calibration-target {
+    background: rgba(212,160,23,0.08);
+    border: 1px dashed var(--gold);
+    padding: 14px;
+    border-radius: 8px;
+    margin: 10px 0;
+    font-style: italic;
+    color: var(--cream);
+    text-align: center;
+    line-height: 1.6;
+  }
+
+  /* PiP */
+  .pip-window {
+    position: fixed;
+    background: var(--panel);
+    border: 2px solid var(--gold);
+    border-radius: 12px;
+    padding: 12px;
+    width: 320px;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+    z-index: 200;
+    cursor: move;
+    user-select: none;
+  }
+  .pip-window .pip-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    color: var(--gold);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .pip-window .pip-text {
+    background: rgba(0,0,0,0.25);
+    border-radius: 6px;
+    padding: 8px;
+    font-size: 13px;
+    min-height: 50px;
+    max-height: 140px;
+    overflow-y: auto;
+    color: var(--ink);
+    user-select: text;
+    cursor: text;
+  }
+  .pip-window .pip-actions {
+    display: flex;
+    gap: 4px;
+    margin-top: 8px;
+  }
+  .pip-window .pip-actions button { flex: 1; font-size: 10px; padding: 4px 6px; }
+
+  /* Status */
+  .status-pill {
+    display: inline-block;
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .status-pill.idle { background: rgba(163, 177, 204, 0.15); color: var(--ink-dim); }
+  .status-pill.live { background: rgba(239, 68, 68, 0.18); color: var(--danger); animation: blink 1.5s infinite; }
+  .status-pill.ok { background: rgba(52, 211, 153, 0.15); color: var(--ok); }
+  @keyframes blink { 50% { opacity: 0.6; } }
+
+  /* Toggle */
+  .toggle-row { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-dim); }
+  .toggle-row input[type=checkbox] { accent-color: var(--gold); }
+  .privacy-note {
+    font-size: 10px;
+    color: var(--ink-dim);
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--line);
+    line-height: 1.4;
+  }
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--gold);
+    color: var(--navy-deep);
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    z-index: 300;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <div>
+      <h1><span class="icon">🎙️</span> Meeting Minutes Recorder</h1>
+      <p class="subtitle">Voice transcription with speaker recognition · Word + cursor-paste output · Standalone, no server</p>
+    </div>
+    <div class="header-actions">
+      <button class="ghost" id="addSpeakerBtn">+ Register Speaker</button>
+      <button class="ghost" id="pipToggleBtn">🪟 Floating</button>
+      <button class="ghost" id="clearBtn">🗑️ Clear</button>
+    </div>
+  </header>
+
+  <div class="grid">
+
+    <!-- LEFT SIDEBAR -->
+    <div>
+      <!-- RECORDING -->
+      <div class="panel" style="margin-bottom: 14px;">
+        <h2>🎤 Recording <span id="statusPill" class="status-pill idle" style="margin-left:auto;">idle</span></h2>
+
+        <div class="record-area">
+          <button id="recordBtn" class="record-btn" title="Click to start/stop">⏺</button>
+          <div class="timer" id="timer">00:00</div>
+          <div class="vu-meter"><div class="vu-bar" id="vuBar"></div></div>
+        </div>
+
+        <div class="field" style="margin-top: 12px;">
+          <label>Language</label>
+          <div class="lang-row" id="langRow">
+            <button data-lang="en-SG" class="active">EN-SG</button>
+            <button data-lang="en-US">EN-US</button>
+            <button data-lang="en-GB">EN-UK</button>
+            <button data-lang="zh-CN">中文</button>
+            <button data-lang="ms-MY">Melayu</button>
+            <button data-lang="ta-IN">தமிழ்</button>
+          </div>
+        </div>
+
+        <div class="toggle-row" style="margin-top: 10px;">
+          <input type="checkbox" id="autoClipboard" checked />
+          <label for="autoClipboard" style="text-transform: none; letter-spacing: 0; margin: 0; font-weight: 400;">Auto-copy each line to clipboard</label>
+        </div>
+
+        <p class="privacy-note">Browser speech recognition routes audio through Google Cloud (Chrome/Edge). Avoid for confidential meetings.</p>
+      </div>
+
+      <!-- SPEAKERS -->
+      <div class="panel">
+        <h2>👥 Speakers <span style="margin-left:auto;font-size:11px;color:var(--ink-dim);" id="speakerCount">0</span></h2>
+        <div id="speakerList" class="speaker-list">
+          <p style="font-size:12px;color:var(--ink-dim);text-align:center;padding:14px 0;font-style:italic;">No registered speakers. Click + Register Speaker to add one. Unknown voices are auto-labeled "Speaker 1", "Speaker 2"…</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT SIDE -->
+    <div>
+      <!-- TRANSCRIPT (WORD VIEW) -->
+      <div class="panel" style="margin-bottom: 14px;">
+        <h2>📝 Meeting Minutes <button id="exportDocxBtn" class="gold tiny" style="margin-left:auto;">⬇ .docx</button> <button id="exportTxtBtn" class="ghost tiny">⬇ .txt</button> <button id="copyAllBtn" class="ghost tiny">📋 Copy</button></h2>
+        <div class="transcript-area" id="transcriptArea">
+          <div class="transcript-doc-header">
+            <h3 id="docTitle" contenteditable="true">Meeting Minutes</h3>
+            <div class="meta" id="docMeta"></div>
+          </div>
+          <div id="utterances">
+            <div class="transcript-empty">Press the record button to begin. Transcribed speech with speaker labels will appear here.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CURSOR-PASTE / LATEST LINE -->
+      <div class="panel">
+        <h2>📍 Cursor Paste Mode</h2>
+        <p style="font-size:11px;color:var(--ink-dim);">Each completed line is automatically copied to your clipboard. Switch to your Word/Notion/Outlook window and press <kbd style="background:var(--panel-2);border:1px solid var(--line);padding:1px 4px;border-radius:3px;font-family:monospace;">Ctrl+V</kbd> (Mac: <kbd style="background:var(--panel-2);border:1px solid var(--line);padding:1px 4px;border-radius:3px;font-family:monospace;">Cmd+V</kbd>) to paste where your cursor is.</p>
+        <div class="cursor-mode">
+          <div style="font-size:10px;color:var(--ink-dim);text-transform:uppercase;letter-spacing:0.06em;">Latest Line (in clipboard)</div>
+          <div class="last-line" id="lastLine"><span style="color:var(--ink-dim);font-style:italic;">Latest spoken line will appear here…</span></div>
+          <button class="ghost tiny" id="copyLastBtn" style="margin-top:6px;">📋 Re-copy this line</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- REGISTRATION MODAL -->
+<div id="regModal" class="modal-bg" style="display:none;">
+  <div class="modal">
+    <h3>🎙️ Register Speaker Voice</h3>
+    <p>Add a name and capture a short voice sample (~10 seconds). The app will use this to label their speech automatically. You can correct labels later by clicking them.</p>
+
+    <div class="field">
+      <label>Name</label>
+      <input type="text" id="regName" placeholder="e.g. Noah" autocomplete="off" />
+    </div>
+
+    <div class="field">
+      <label>Color</label>
+      <div id="regColors" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
+    </div>
+
+    <div id="regStep1">
+      <div class="calibration-target">
+        Read aloud, in your normal voice:<br>
+        <strong style="color:var(--gold-bright);">"The quick brown fox jumps over the lazy dog. Today's meeting is about quadrant focus."</strong>
+      </div>
+      <div style="text-align:center;">
+        <button id="regStartBtn" class="gold">🎤 Start 10-second capture</button>
+      </div>
+      <div id="regStatus" style="text-align:center;font-size:12px;color:var(--ink-dim);margin-top:8px;"></div>
+      <div class="vu-meter" style="margin-top:8px;"><div class="vu-bar" id="regVuBar"></div></div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="ghost" id="regCancelBtn">Cancel</button>
+      <button class="gold" id="regSaveBtn" disabled>Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- SPEAKER PICKER POPUP -->
+<div id="speakerPicker" class="modal-bg" style="display:none;">
+  <div class="modal" style="max-width:380px;">
+    <h3>✏️ Re-assign Speaker</h3>
+    <p>Choose the correct speaker for this line. Future similar voices will learn from this correction.</p>
+    <div id="speakerPickerOptions" style="display:flex;flex-direction:column;gap:6px;"></div>
+    <div class="modal-actions">
+      <button class="ghost" id="speakerPickerCancelBtn">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- PiP -->
+<div id="pipWindow" class="pip-window" style="display:none; right: 24px; bottom: 24px;">
+  <div class="pip-header" id="pipDragHandle">
+    <span>🎙️ Live</span>
+    <button class="ghost tiny" id="pipCloseBtn" style="padding:2px 6px;">×</button>
+  </div>
+  <div class="pip-text" id="pipText">Latest spoken line will appear here…</div>
+  <div class="pip-actions">
+    <button class="ghost tiny" id="pipCopyBtn">📋 Copy line</button>
+    <button class="gold tiny" id="pipCopyAllBtn">📄 Copy all</button>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+'use strict';
+
+// ============ CONSTANTS ============
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+const PALETTE = ['#3b82f6', '#10b981', '#f59e0b', '#a855f7', '#ec4899', '#14b8a6', '#06b6d4', '#84cc16', '#ef4444', '#6366f1'];
+const STORAGE_KEY = 'mmr-data-v1';
+
+// ============ STATE ============
+let speakers = [];                 // { id, name, color, fingerprint: { pitch, energy, formantHints }, samples }
+let utterances = [];               // { id, ts, speakerId, speakerLabel, text, features, confidence }
+let unknownSpeakerCount = 0;
+let unknownClusters = [];          // { id, label, fingerprint, count }
+let currentLang = 'en-SG';
+let currentRecordSpeakerColor = null;
+let recordingStartTs = null;
+let timerInterval = null;
+let recognition = null;
+let listening = false;
+let audioContext = null;
+let analyser = null;
+let mediaStream = null;
+let vuRafId = null;
+let liveFeatures = { pitch: 0, energy: 0, samples: 0 };
+let registrationFeatures = null;
+let registrationSamples = 0;
+let regColor = PALETTE[0];
+let regCapturing = false;
+
+// ============ STORAGE ============
+function save() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      speakers,
+      utterances,
+      unknownClusters,
+      docTitle: document.getElementById('docTitle').textContent,
+      currentLang
+    }));
+  } catch (e) { console.error('save failed', e); }
+}
+function load() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const d = JSON.parse(raw);
+    speakers = d.speakers || [];
+    utterances = d.utterances || [];
+    unknownClusters = d.unknownClusters || [];
+    unknownSpeakerCount = unknownClusters.length;
+    if (d.docTitle) document.getElementById('docTitle').textContent = d.docTitle;
+    if (d.currentLang) {
+      currentLang = d.currentLang;
+      document.querySelectorAll('#langRow button').forEach(b => b.classList.toggle('active', b.dataset.lang === currentLang));
+    }
+  } catch (e) { console.error('load failed', e); }
+}
+
+// ============ AUDIO FEATURE EXTRACTION ============
+async function startAudioStream() {
+  if (mediaStream) return;
+  try {
+    mediaStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const source = audioContext.createMediaStreamSource(mediaStream);
+    analyser = audioContext.createAnalyser();
+    analyser.fftSize = 2048;
+    analyser.smoothingTimeConstant = 0.4;
+    source.connect(analyser);
+    startVuLoop();
+  } catch (e) {
+    showToast('Microphone access denied. Please allow it.');
+    throw e;
+  }
+}
+
+function stopAudioStream() {
+  if (vuRafId) cancelAnimationFrame(vuRafId);
+  if (mediaStream) { mediaStream.getTracks().forEach(t => t.stop()); mediaStream = null; }
+  if (audioContext) { audioContext.close(); audioContext = null; }
+  analyser = null;
+  document.getElementById('vuBar').style.width = '0%';
+}
+
+// Estimate fundamental pitch via autocorrelation on time-domain data
+function estimatePitch(buffer, sampleRate) {
+  let SIZE = buffer.length;
+  let rms = 0;
+  for (let i = 0; i < SIZE; i++) rms += buffer[i] * buffer[i];
+  rms = Math.sqrt(rms / SIZE);
+  if (rms < 0.01) return -1; // too quiet
+
+  let r1 = 0, r2 = SIZE - 1, thres = 0.2;
+  for (let i = 0; i < SIZE / 2; i++) if (Math.abs(buffer[i]) < thres) { r1 = i; break; }
+  for (let i = 1; i < SIZE / 2; i++) if (Math.abs(buffer[SIZE - i]) < thres) { r2 = SIZE - i; break; }
+  buffer = buffer.slice(r1, r2);
+  SIZE = buffer.length;
+
+  const c = new Array(SIZE).fill(0);
+  for (let i = 0; i < SIZE; i++) for (let j = 0; j < SIZE - i; j++) c[i] += buffer[j] * buffer[j + i];
+
+  let d = 0;
+  while (d < SIZE - 1 && c[d] > c[d + 1]) d++;
+
+  let maxVal = -1, maxPos = -1;
+  for (let i = d; i < SIZE; i++) if (c[i] > maxVal) { maxVal = c[i]; maxPos = i; }
+  if (maxPos <= 0) return -1;
+  let T0 = maxPos;
+  if (maxPos > 0 && maxPos < SIZE - 1) {
+    const x1 = c[maxPos - 1], x2 = c[maxPos], x3 = c[maxPos + 1];
+    const a = (x1 + x3 - 2 * x2) / 2;
+    const b = (x3 - x1) / 2;
+    if (a) T0 = maxPos - b / (2 * a);
+  }
+  return sampleRate / T0;
+}
+
+// Get spectral centroid (timbre/brightness hint)
+function spectralCentroid(freqData, sampleRate) {
+  let weighted = 0, total = 0;
+  for (let i = 0; i < freqData.length; i++) {
+    weighted += i * freqData[i];
+    total += freqData[i];
+  }
+  if (total === 0) return 0;
+  return (weighted / total) * (sampleRate / 2 / freqData.length);
+}
+
+function startVuLoop() {
+  const bufferLength = analyser.fftSize;
+  const time = new Float32Array(bufferLength);
+  const freq = new Uint8Array(analyser.frequencyBinCount);
+
+  function tick() {
+    if (!analyser) return;
+    analyser.getFloatTimeDomainData(time);
+    analyser.getByteFrequencyData(freq);
+
+    // RMS energy for VU meter
+    let rms = 0;
+    for (let i = 0; i < time.length; i++) rms += time[i] * time[i];
+    rms = Math.sqrt(rms / time.length);
+    const vuPct = Math.min(100, rms * 240);
+    document.getElementById('vuBar').style.width = vuPct + '%';
+    if (regCapturing) document.getElementById('regVuBar').style.width = vuPct + '%';
+
+    // Feature extraction (only when speaking)
+    if (rms > 0.012) {
+      const pitch = estimatePitch(time, audioContext.sampleRate);
+      const centroid = spectralCentroid(freq, audioContext.sampleRate);
+      if (pitch > 60 && pitch < 500) {
+        liveFeatures.pitch = liveFeatures.pitch ? (liveFeatures.pitch * 0.7 + pitch * 0.3) : pitch;
+        liveFeatures.energy = liveFeatures.energy ? (liveFeatures.energy * 0.7 + rms * 0.3) : rms;
+        liveFeatures.centroid = liveFeatures.centroid ? (liveFeatures.centroid * 0.7 + centroid * 0.3) : centroid;
+        liveFeatures.samples++;
+
+        if (regCapturing) {
+          if (!registrationFeatures) registrationFeatures = { pitch: pitch, energy: rms, centroid, count: 1 };
+          else {
+            registrationFeatures.pitch = (registrationFeatures.pitch * registrationFeatures.count + pitch) / (registrationFeatures.count + 1);
+            registrationFeatures.energy = (registrationFeatures.energy * registrationFeatures.count + rms) / (registrationFeatures.count + 1);
+            registrationFeatures.centroid = (registrationFeatures.centroid * registrationFeatures.count + centroid) / (registrationFeatures.count + 1);
+            registrationFeatures.count++;
+          }
+          registrationSamples++;
+        }
+      }
+    }
+
+    vuRafId = requestAnimationFrame(tick);
+  }
+  tick();
+}
+
+// ============ SPEAKER DETECTION ============
+function distanceBetween(a, b) {
+  if (!a || !b) return 9999;
+  const dPitch = Math.abs((a.pitch || 0) - (b.pitch || 0)) / 50; // normalized
+  const dCentroid = Math.abs((a.centroid || 0) - (b.centroid || 0)) / 1000;
+  return dPitch + dCentroid * 0.5;
+}
+
+// Returns { speakerId, label, color, confidence }
+function identifySpeaker(features) {
+  if (!features || !features.pitch) {
+    return { speakerId: null, label: 'Unknown', color: '#94a3b8', confidence: 0 };
+  }
+
+  // Try registered speakers first
+  let best = null;
+  for (const sp of speakers) {
+    if (!sp.fingerprint) continue;
+    const dist = distanceBetween(features, sp.fingerprint);
+    if (!best || dist < best.dist) best = { speaker: sp, dist };
+  }
+  if (best && best.dist < 1.2) {
+    const conf = Math.max(0, Math.min(1, (1.5 - best.dist) / 1.5));
+    return { speakerId: best.speaker.id, label: best.speaker.name, color: best.speaker.color, confidence: conf };
+  }
+
+  // Try existing unknown clusters
+  let bestCluster = null;
+  for (const cl of unknownClusters) {
+    const dist = distanceBetween(features, cl.fingerprint);
+    if (!bestCluster || dist < bestCluster.dist) bestCluster = { cluster: cl, dist };
+  }
+  if (bestCluster && bestCluster.dist < 0.9) {
+    // merge into cluster
+    const cl = bestCluster.cluster;
+    cl.fingerprint.pitch = (cl.fingerprint.pitch * cl.count + features.pitch) / (cl.count + 1);
+    cl.fingerprint.centroid = (cl.fingerprint.centroid * cl.count + features.centroid) / (cl.count + 1);
+    cl.count++;
+    return { speakerId: cl.id, label: cl.label, color: cl.color, confidence: 0.5, isUnknown: true };
+  }
+
+  // Make new unknown cluster
+  unknownSpeakerCount++;
+  const id = 'unk-' + Date.now();
+  const color = PALETTE[(speakers.length + unknownClusters.length) % PALETTE.length];
+  const cl = { id, label: 'Speaker ' + unknownSpeakerCount, color, fingerprint: { pitch: features.pitch, centroid: features.centroid }, count: 1 };
+  unknownClusters.push(cl);
+  return { speakerId: id, label: cl.label, color, confidence: 0.3, isUnknown: true };
+}
+
+// ============ RECORDING ============
+async function startRecording() {
+  if (!SR) {
+    showToast('Speech Recognition not supported. Use Chrome, Edge, or Safari.');
+    return;
+  }
+  await startAudioStream();
+  recordingStartTs = Date.now();
+  startTimer();
+
+  recognition = new SR();
+  recognition.continuous = true;
+  recognition.interimResults = true;
+  recognition.lang = currentLang;
+  recognition.maxAlternatives = 1;
+
+  let interimUtteranceId = null;
+
+  recognition.onstart = () => {
+    listening = true;
+    document.getElementById('recordBtn').classList.add('recording');
+    document.getElementById('recordBtn').textContent = '⏸';
+    setStatus('live', 'recording');
+    if (!document.getElementById('docMeta').textContent) {
+      document.getElementById('docMeta').textContent = `Recorded ${new Date().toLocaleString()}`;
+    }
+  };
+
+  recognition.onresult = (event) => {
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+      const result = event.results[i];
+      const transcript = result[0].transcript.trim();
+      if (!transcript) continue;
+
+      if (result.isFinal) {
+        // Snapshot features at the moment of finalization
+        const features = liveFeatures.pitch ? { pitch: liveFeatures.pitch, centroid: liveFeatures.centroid || 0 } : null;
+        const ident = identifySpeaker(features);
+        const utterance = {
+          id: 'u-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
+          ts: Date.now() - recordingStartTs,
+          speakerId: ident.speakerId,
+          speakerLabel: ident.label,
+          speakerColor: ident.color,
+          confidence: ident.confidence,
+          isUnknown: ident.isUnknown,
+          text: transcript,
+          features
+        };
+        utterances.push(utterance);
+        renderTranscript();
+        save();
+
+        // Auto clipboard + PiP
+        const line = `${ident.label}: ${transcript}`;
+        if (document.getElementById('autoClipboard').checked) copyText(line);
+        document.getElementById('lastLine').textContent = line;
+        if (pipVisible) document.getElementById('pipText').textContent = line;
+        interimUtteranceId = null;
+        liveFeatures = { pitch: 0, energy: 0, centroid: 0, samples: 0 };
+      } else {
+        // Show interim
+        renderInterim(transcript);
+      }
+    }
+  };
+
+  recognition.onerror = (event) => {
+    const map = {
+      'not-allowed': 'Microphone permission denied.',
+      'service-not-allowed': 'Microphone blocked by browser/OS.',
+      'no-speech': 'No speech detected.',
+      'audio-capture': 'No microphone found.',
+      'network': 'Network error — voice recognition uses Google Cloud, check internet.',
+      'aborted': null,
+      'language-not-supported': `Language ${currentLang} not supported.`
+    };
+    if (map[event.error]) showToast(map[event.error]);
+    if (event.error === 'no-speech' && listening) {
+      // restart
+      try { recognition.start(); } catch (e) {}
+      return;
+    }
+    if (event.error !== 'aborted') stopRecording();
+  };
+
+  recognition.onend = () => {
+    if (listening) {
+      // Auto-restart for continuous mode
+      try { recognition.start(); } catch (e) { stopRecording(); }
+    }
+  };
+
+  try {
+    recognition.start();
+  } catch (e) {
+    showToast('Could not start: ' + e.message);
+    stopRecording();
+  }
+}
+
+function stopRecording() {
+  listening = false;
+  if (recognition) {
+    try { recognition.stop(); } catch (e) {}
+    recognition = null;
+  }
+  stopAudioStream();
+  stopTimer();
+  document.getElementById('recordBtn').classList.remove('recording');
+  document.getElementById('recordBtn').textContent = '⏺';
+  setStatus('idle', 'idle');
+  renderInterim(null);
+}
+
+function startTimer() {
+  function update() {
+    const elapsed = Math.floor((Date.now() - recordingStartTs) / 1000);
+    const mm = String(Math.floor(elapsed / 60)).padStart(2, '0');
+    const ss = String(elapsed % 60).padStart(2, '0');
+    document.getElementById('timer').textContent = `${mm}:${ss}`;
+  }
+  update();
+  timerInterval = setInterval(update, 1000);
+}
+function stopTimer() {
+  if (timerInterval) clearInterval(timerInterval);
+}
+function setStatus(cls, text) {
+  const s = document.getElementById('statusPill');
+  s.className = 'status-pill ' + cls;
+  s.textContent = text;
+}
+
+// ============ RENDERING ============
+function formatTimestamp(ms) {
+  const s = Math.floor(ms / 1000);
+  const mm = String(Math.floor(s / 60)).padStart(2, '0');
+  const ss = String(s % 60).padStart(2, '0');
+  return `${mm}:${ss}`;
+}
+
+function renderTranscript() {
+  const container = document.getElementById('utterances');
+  if (utterances.length === 0) {
+    container.innerHTML = '<div class="transcript-empty">Press the record button to begin. Transcribed speech with speaker labels will appear here.</div>';
+    return;
+  }
+  container.innerHTML = utterances.map(u => {
+    const lowConf = u.confidence !== undefined && u.confidence < 0.5;
+    return `<div class="utterance" data-id="${u.id}">
+      <span class="timestamp">${formatTimestamp(u.ts)}</span>
+      <div class="utterance-content ${lowConf ? 'confidence-low' : ''}">
+        <span class="speaker-tag ${u.isUnknown ? 'unknown' : ''}" style="color:${u.speakerColor};" data-id="${u.id}" title="Click to re-assign speaker">${escapeHTML(u.speakerLabel)}:</span>
+        <span class="text">${escapeHTML(u.text)}</span>
+      </div>
+    </div>`;
+  }).join('');
+  // Wire speaker tag clicks
+  container.querySelectorAll('.speaker-tag').forEach(tag => {
+    tag.addEventListener('click', () => openSpeakerPicker(tag.dataset.id));
+  });
+  container.scrollTop = container.scrollHeight;
+}
+
+let interimEl = null;
+function renderInterim(text) {
+  const container = document.getElementById('utterances');
+  // remove old interim
+  const existing = container.querySelector('.utterance.interim-row');
+  if (existing) existing.remove();
+  if (!text) return;
+  const div = document.createElement('div');
+  div.className = 'utterance interim-row';
+  div.innerHTML = `<span class="timestamp">…</span><div class="utterance-content"><span class="text interim">${escapeHTML(text)}</span></div>`;
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+}
+
+function renderSpeakers() {
+  const list = document.getElementById('speakerList');
+  document.getElementById('speakerCount').textContent = speakers.length + unknownClusters.length;
+  if (speakers.length === 0 && unknownClusters.length === 0) {
+    list.innerHTML = '<p style="font-size:12px;color:var(--ink-dim);text-align:center;padding:14px 0;font-style:italic;">No speakers yet. Click + Register Speaker to add one. Unknown voices auto-label as "Speaker 1", "Speaker 2"…</p>';
+    return;
+  }
+  let html = '';
+  speakers.forEach(sp => {
+    const count = utterances.filter(u => u.speakerId === sp.id).length;
+    html += `<div class="speaker-row" style="border-left-color:${sp.color}">
+      <span class="speaker-name" style="color:${sp.color};">${escapeHTML(sp.name)}</span>
+      <span class="speaker-stats">${count} lines</span>
+      <button class="icon-btn" data-action="rename" data-id="${sp.id}" title="Rename">✏️</button>
+      <button class="icon-btn" data-action="delete" data-id="${sp.id}" title="Delete">🗑</button>
+    </div>`;
+  });
+  unknownClusters.forEach(cl => {
+    const count = utterances.filter(u => u.speakerId === cl.id).length;
+    if (count === 0) return;
+    html += `<div class="speaker-row" style="border-left-color:${cl.color}">
+      <span class="speaker-name" style="color:${cl.color};font-style:italic;">${escapeHTML(cl.label)}</span>
+      <span class="speaker-stats">${count} lines</span>
+      <button class="icon-btn" data-action="promote" data-id="${cl.id}" title="Name this speaker">🏷️</button>
+    </div>`;
+  });
+  list.innerHTML = html;
+  list.querySelectorAll('.icon-btn').forEach(b => {
+    b.addEventListener('click', () => {
+      const id = b.dataset.id;
+      if (b.dataset.action === 'rename') renameSpeaker(id);
+      else if (b.dataset.action === 'delete') deleteSpeaker(id);
+      else if (b.dataset.action === 'promote') promoteUnknown(id);
+    });
+  });
+}
+
+function escapeHTML(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+// ============ SPEAKER ACTIONS ============
+function renameSpeaker(id) {
+  const sp = speakers.find(s => s.id === id);
+  if (!sp) return;
+  const newName = prompt('Rename speaker:', sp.name);
+  if (newName && newName.trim()) {
+    sp.name = newName.trim();
+    utterances.forEach(u => { if (u.speakerId === id) u.speakerLabel = sp.name; });
+    renderSpeakers(); renderTranscript(); save();
+  }
+}
+function deleteSpeaker(id) {
+  if (!confirm('Delete this speaker? Their lines will be reassigned to "Unknown".')) return;
+  speakers = speakers.filter(s => s.id !== id);
+  utterances.forEach(u => {
+    if (u.speakerId === id) {
+      u.speakerLabel = 'Unknown';
+      u.speakerColor = '#94a3b8';
+      u.speakerId = null;
+      u.isUnknown = true;
+    }
+  });
+  renderSpeakers(); renderTranscript(); save();
+}
+function promoteUnknown(id) {
+  const cl = unknownClusters.find(c => c.id === id);
+  if (!cl) return;
+  const name = prompt('Name this speaker:', '');
+  if (!name || !name.trim()) return;
+  const sp = {
+    id: 'sp-' + Date.now(),
+    name: name.trim(),
+    color: cl.color,
+    fingerprint: cl.fingerprint
+  };
+  speakers.push(sp);
+  // Reassign all utterances with this cluster id
+  utterances.forEach(u => {
+    if (u.speakerId === id) {
+      u.speakerId = sp.id;
+      u.speakerLabel = sp.name;
+      u.speakerColor = sp.color;
+      u.isUnknown = false;
+    }
+  });
+  unknownClusters = unknownClusters.filter(c => c.id !== id);
+  renderSpeakers(); renderTranscript(); save();
+}
+
+// ============ SPEAKER PICKER (re-assign per utterance) ============
+let pickerUtteranceId = null;
+function openSpeakerPicker(uId) {
+  pickerUtteranceId = uId;
+  const u = utterances.find(x => x.id === uId);
+  if (!u) return;
+  const opts = document.getElementById('speakerPickerOptions');
+  let html = '';
+  speakers.forEach(sp => {
+    html += `<button class="ghost" data-pick="sp:${sp.id}" style="justify-content:flex-start;border-left:3px solid ${sp.color};">${escapeHTML(sp.name)}</button>`;
+  });
+  unknownClusters.forEach(cl => {
+    if (cl.id === u.speakerId) return;
+    html += `<button class="ghost" data-pick="cl:${cl.id}" style="justify-content:flex-start;border-left:3px solid ${cl.color};font-style:italic;">${escapeHTML(cl.label)}</button>`;
+  });
+  html += `<button class="ghost" data-pick="new" style="justify-content:flex-start;border-left:3px solid var(--gold);">+ New named speaker</button>`;
+  opts.innerHTML = html;
+  opts.querySelectorAll('button[data-pick]').forEach(b => {
+    b.addEventListener('click', () => assignUtteranceTo(b.dataset.pick));
+  });
+  document.getElementById('speakerPicker').style.display = 'flex';
+}
+function closeSpeakerPicker() { document.getElementById('speakerPicker').style.display = 'none'; pickerUtteranceId = null; }
+document.getElementById('speakerPickerCancelBtn').addEventListener('click', closeSpeakerPicker);
+
+function assignUtteranceTo(target) {
+  if (!pickerUtteranceId) return;
+  const u = utterances.find(x => x.id === pickerUtteranceId);
+  if (!u) return;
+  if (target === 'new') {
+    const name = prompt('Name this new speaker:');
+    if (!name || !name.trim()) return;
+    const color = PALETTE[(speakers.length + unknownClusters.length) % PALETTE.length];
+    const sp = { id: 'sp-' + Date.now(), name: name.trim(), color, fingerprint: u.features ? { pitch: u.features.pitch, centroid: u.features.centroid } : null };
+    speakers.push(sp);
+    u.speakerId = sp.id;
+    u.speakerLabel = sp.name;
+    u.speakerColor = sp.color;
+    u.isUnknown = false;
+  } else if (target.startsWith('sp:')) {
+    const id = target.slice(3);
+    const sp = speakers.find(s => s.id === id);
+    if (sp) {
+      // Teach this speaker's fingerprint with the new sample
+      if (u.features && sp.fingerprint) {
+        sp.fingerprint.pitch = (sp.fingerprint.pitch + u.features.pitch) / 2;
+        sp.fingerprint.centroid = (sp.fingerprint.centroid + u.features.centroid) / 2;
+      } else if (u.features) {
+        sp.fingerprint = { pitch: u.features.pitch, centroid: u.features.centroid };
+      }
+      u.speakerId = sp.id;
+      u.speakerLabel = sp.name;
+      u.speakerColor = sp.color;
+      u.isUnknown = false;
+    }
+  } else if (target.startsWith('cl:')) {
+    const id = target.slice(3);
+    const cl = unknownClusters.find(c => c.id === id);
+    if (cl) {
+      u.speakerId = cl.id;
+      u.speakerLabel = cl.label;
+      u.speakerColor = cl.color;
+      u.isUnknown = true;
+    }
+  }
+  closeSpeakerPicker();
+  renderTranscript(); renderSpeakers(); save();
+  showToast('Re-assigned ✓');
+}
+
+// ============ REGISTRATION ============
+function openRegistration() {
+  document.getElementById('regModal').style.display = 'flex';
+  document.getElementById('regName').value = '';
+  registrationFeatures = null;
+  registrationSamples = 0;
+  regCapturing = false;
+  document.getElementById('regSaveBtn').disabled = true;
+  document.getElementById('regStatus').textContent = '';
+  document.getElementById('regStartBtn').disabled = false;
+  document.getElementById('regStartBtn').textContent = '🎤 Start 10-second capture';
+  // Render colors
+  const used = new Set(speakers.map(s => s.color));
+  const colorEl = document.getElementById('regColors');
+  colorEl.innerHTML = PALETTE.map(c => {
+    const dis = used.has(c) ? 'opacity:0.4;' : '';
+    return `<button data-color="${c}" style="width:28px;height:28px;border-radius:50%;background:${c};border:2px solid transparent;${dis}padding:0;"></button>`;
+  }).join('');
+  regColor = PALETTE.find(c => !used.has(c)) || PALETTE[0];
+  function refreshColors() {
+    colorEl.querySelectorAll('button').forEach(b => {
+      b.style.borderColor = (b.dataset.color === regColor) ? 'var(--gold)' : 'transparent';
+    });
+  }
+  refreshColors();
+  colorEl.querySelectorAll('button').forEach(b => {
+    b.addEventListener('click', () => { regColor = b.dataset.color; refreshColors(); });
+  });
+  document.getElementById('regName').focus();
+}
+
+document.getElementById('addSpeakerBtn').addEventListener('click', openRegistration);
+document.getElementById('regCancelBtn').addEventListener('click', () => {
+  document.getElementById('regModal').style.display = 'none';
+  if (regCapturing) {
+    regCapturing = false;
+    if (!listening) stopAudioStream();
+  }
+});
+
+document.getElementById('regStartBtn').addEventListener('click', async () => {
+  const name = document.getElementById('regName').value.trim();
+  if (!name) { showToast('Enter a name first'); return; }
+  try {
+    if (!mediaStream) await startAudioStream();
+    regCapturing = true;
+    registrationFeatures = null;
+    registrationSamples = 0;
+    document.getElementById('regStartBtn').disabled = true;
+    let countdown = 10;
+    document.getElementById('regStatus').textContent = `Recording… ${countdown}s — speak the phrase`;
+    const interval = setInterval(() => {
+      countdown--;
+      if (countdown > 0) {
+        document.getElementById('regStatus').textContent = `Recording… ${countdown}s — speak the phrase`;
+      } else {
+        clearInterval(interval);
+        regCapturing = false;
+        if (!listening) stopAudioStream();
+        if (registrationFeatures && registrationSamples > 30) {
+          document.getElementById('regStatus').textContent = `✓ Captured ${registrationSamples} samples (avg pitch ${registrationFeatures.pitch.toFixed(0)} Hz)`;
+          document.getElementById('regSaveBtn').disabled = false;
+        } else {
+          document.getElementById('regStatus').textContent = `⚠️ Not enough voice detected (${registrationSamples} samples). Try again, speak louder.`;
+          document.getElementById('regStartBtn').disabled = false;
+        }
+        document.getElementById('regVuBar').style.width = '0%';
+      }
+    }, 1000);
+  } catch (e) {
+    document.getElementById('regStatus').textContent = '❌ ' + e.message;
+  }
+});
+
+document.getElementById('regSaveBtn').addEventListener('click', () => {
+  const name = document.getElementById('regName').value.trim();
+  if (!name || !registrationFeatures) return;
+  const sp = {
+    id: 'sp-' + Date.now(),
+    name,
+    color: regColor,
+    fingerprint: { pitch: registrationFeatures.pitch, centroid: registrationFeatures.centroid }
+  };
+  speakers.push(sp);
+  document.getElementById('regModal').style.display = 'none';
+  renderSpeakers();
+  save();
+  showToast(`✓ ${name} registered`);
+});
+
+// ============ EXPORT ============
+function buildPlainTranscript() {
+  const title = document.getElementById('docTitle').textContent;
+  const meta = document.getElementById('docMeta').textContent;
+  let out = `${title}\n${meta}\n${'='.repeat(60)}\n\n`;
+  utterances.forEach(u => {
+    out += `[${formatTimestamp(u.ts)}] ${u.speakerLabel}: ${u.text}\n\n`;
+  });
+  return out;
+}
+
+function exportTxt() {
+  const blob = new Blob([buildPlainTranscript()], { type: 'text/plain;charset=utf-8' });
+  downloadBlob(blob, `meeting-minutes-${new Date().toISOString().split('T')[0]}.txt`);
+}
+
+// Build a Word-readable HTML doc using the .doc extension trick (opens natively in Word)
+function exportDocx() {
+  const title = document.getElementById('docTitle').textContent;
+  const meta = document.getElementById('docMeta').textContent;
+  // List of unique speakers with line counts
+  const allSpeakers = {};
+  utterances.forEach(u => {
+    const k = u.speakerLabel;
+    if (!allSpeakers[k]) allSpeakers[k] = { count: 0, color: u.speakerColor };
+    allSpeakers[k].count++;
+  });
+  const attendeesHTML = Object.entries(allSpeakers).map(([n, d]) => `<li><span style="color:${d.color};font-weight:bold;">${escapeHTML(n)}</span> — ${d.count} contribution${d.count === 1 ? '' : 's'}</li>`).join('');
+  const utterancesHTML = utterances.map(u => `
+    <p style="margin: 0 0 12pt 0;">
+      <span style="color: #6b7280; font-family: 'Consolas', monospace; font-size: 9pt;">[${formatTimestamp(u.ts)}]</span>
+      <strong style="color: ${u.speakerColor};">${escapeHTML(u.speakerLabel)}:</strong>
+      <span>${escapeHTML(u.text)}</span>
+    </p>`).join('');
+
+  const html = `<!DOCTYPE html>
+<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+<meta charset="utf-8">
+<title>${escapeHTML(title)}</title>
+<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom><w:DoNotOptimizeForBrowser/></w:WordDocument></xml><![endif]-->
+<style>
+  body { font-family: 'Calibri', 'Segoe UI', sans-serif; font-size: 11pt; color: #1a1a1a; line-height: 1.5; }
+  h1 { color: #1e3a8a; font-size: 18pt; border-bottom: 2pt solid #d4a017; padding-bottom: 6pt; }
+  h2 { color: #1e3a8a; font-size: 13pt; margin-top: 18pt; border-bottom: 1pt solid #d4a017; padding-bottom: 3pt; }
+  .meta { color: #6b7280; font-style: italic; font-size: 10pt; margin-bottom: 12pt; }
+  ul { padding-left: 20pt; }
+  li { margin-bottom: 4pt; }
+</style>
+</head>
+<body>
+  <h1>${escapeHTML(title)}</h1>
+  <div class="meta">${escapeHTML(meta)}</div>
+  <h2>Attendees</h2>
+  <ul>${attendeesHTML || '<li><em>None recorded</em></li>'}</ul>
+  <h2>Transcript</h2>
+  ${utterancesHTML || '<p><em>No transcript yet.</em></p>'}
+</body>
+</html>`;
+
+  const blob = new Blob(['\ufeff', html], { type: 'application/msword' });
+  downloadBlob(blob, `meeting-minutes-${new Date().toISOString().split('T')[0]}.doc`);
+  showToast('✓ Saved. Opens natively in Word.');
+}
+
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+document.getElementById('exportTxtBtn').addEventListener('click', exportTxt);
+document.getElementById('exportDocxBtn').addEventListener('click', exportDocx);
+document.getElementById('copyAllBtn').addEventListener('click', () => copyText(buildPlainTranscript(), 'Full transcript copied'));
+
+// ============ CLIPBOARD ============
+async function copyText(text, toastMsg) {
+  if (!text) return;
+  try {
+    await navigator.clipboard.writeText(text);
+    if (toastMsg) showToast(toastMsg);
+  } catch (e) {
+    // Fallback
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); } catch (err) {}
+    document.body.removeChild(ta);
+  }
+}
+
+document.getElementById('copyLastBtn').addEventListener('click', () => {
+  const txt = document.getElementById('lastLine').textContent.trim();
+  if (txt && !txt.includes('Latest spoken')) copyText(txt, 'Re-copied to clipboard');
+});
+
+// ============ TOAST ============
+let toastTimer = null;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ============ PiP ============
+let pipVisible = false;
+const pipWindow = document.getElementById('pipWindow');
+const pipDragHandle = document.getElementById('pipDragHandle');
+let pipDragging = false;
+let pipOffset = { x: 0, y: 0 };
+
+document.getElementById('pipToggleBtn').addEventListener('click', () => {
+  pipVisible = !pipVisible;
+  pipWindow.style.display = pipVisible ? 'block' : 'none';
+  if (pipVisible) {
+    document.getElementById('pipText').textContent = document.getElementById('lastLine').textContent;
+  }
+});
+document.getElementById('pipCloseBtn').addEventListener('click', () => {
+  pipVisible = false; pipWindow.style.display = 'none';
+});
+document.getElementById('pipCopyBtn').addEventListener('click', () => {
+  const txt = document.getElementById('pipText').textContent;
+  if (txt) copyText(txt, 'Copied');
+});
+document.getElementById('pipCopyAllBtn').addEventListener('click', () => copyText(buildPlainTranscript(), 'All copied'));
+
+pipDragHandle.addEventListener('mousedown', (e) => {
+  if (e.target.closest('button')) return;
+  pipDragging = true;
+  const rect = pipWindow.getBoundingClientRect();
+  pipOffset.x = e.clientX - rect.left;
+  pipOffset.y = e.clientY - rect.top;
+  pipWindow.style.right = 'auto';
+  pipWindow.style.bottom = 'auto';
+});
+document.addEventListener('mousemove', (e) => {
+  if (!pipDragging) return;
+  pipWindow.style.left = (e.clientX - pipOffset.x) + 'px';
+  pipWindow.style.top = (e.clientY - pipOffset.y) + 'px';
+});
+document.addEventListener('mouseup', () => { pipDragging = false; });
+
+// ============ EVENT WIRING ============
+document.getElementById('recordBtn').addEventListener('click', () => {
+  if (listening) stopRecording();
+  else startRecording();
+});
+
+document.querySelectorAll('#langRow button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#langRow button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentLang = btn.dataset.lang;
+    save();
+    if (recognition) recognition.lang = currentLang;
+  });
+});
+
+document.getElementById('clearBtn').addEventListener('click', () => {
+  if (!confirm('Clear all transcript and unknown speakers? Registered speakers will be kept.')) return;
+  utterances = [];
+  unknownClusters = [];
+  unknownSpeakerCount = 0;
+  document.getElementById('docMeta').textContent = '';
+  document.getElementById('lastLine').innerHTML = '<span style="color:var(--ink-dim);font-style:italic;">Latest spoken line will appear here…</span>';
+  renderTranscript(); renderSpeakers(); save();
+  showToast('Transcript cleared');
+});
+
+document.getElementById('docTitle').addEventListener('blur', save);
+
+// Save on close
+window.addEventListener('beforeunload', () => save());
+
+// ============ INIT ============
+load();
+renderSpeakers();
+renderTranscript();
+if (!SR) {
+  document.getElementById('recordBtn').disabled = true;
+  showToast('Speech Recognition not supported. Use Chrome, Edge, or Safari.');
+}
+
+</script>
+
+</body>
+</html>
